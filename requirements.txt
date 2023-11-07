@@ -1,0 +1,13 @@
+datetime
+mediapipe
+matplotlib
+opencv-python
+python-dotenv
+requests
+pytest
+nest_asyncio
+pandas
+SQLAlchemy
+pygrabber
+pandas
+twilio
