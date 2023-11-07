@@ -14,19 +14,24 @@ class data_commands:
     def __init__(self):
         pass
     
+    #* Prints the name of all functions in this class in a readable string format
     def help(self):
-        functions = [name for name in dir(self) if callable(getattr(self, name))]
+        functions_list = [name for name in dir(self) if callable(getattr(self, name))]
+        functions = ""
+        for function in functions_list:
+            function_list += f"{function}\n"
+        return functions
         
-    #query the database to get the current set video save path
+    #*query the database to get the current set video save path
     def get_video_save_path(self):
         with Session(engine) as session:
             try:
                 save_path = select(Settings).where(Settings.video_save_path.in_('user_settings'))
                 return save_path
             except SQLAlchemyError as e:
-                logging.error(f"An SQL error has occured: {str(e)}")
+                logging.error(f"An SQL error has occured when trying to get video save path: {str(e)}")
                 
-    #query the database to get the current Phone number
+    #*query the database to get the current Phone number
     def get_phone_number(self):
         with Session(engine) as session:
             try:
@@ -35,7 +40,8 @@ class data_commands:
             except SQLAlchemyError as e:
                 logging.error(f"An SQL error has occured when trying to get phone number {str(e)}")
                 
-    #update the video save path in the database
+    #*update the video save path in the database       
+    #todo when this function is called open a window to choose file savepath
     def change_video_save_path(self, new_savepath:str):
         with Session(engine) as session:
             try:
@@ -45,10 +51,10 @@ class data_commands:
                 session.commit()
 
             except SQLAlchemyError as e:
-                logging.error(f"An SQL error has occured: {str(e)}")
+                logging.error(f"An SQL error has occured when trying to change video save path: {str(e)}")
                 session.rollback()
                 
-    #update the Phone number in the database
+    #*update the Phone number in the database
     def change_phone_number(self,new_phone_number): #new email will be gotten from the settings form
         with Session(engine) as session:
             try: 
@@ -67,4 +73,27 @@ class data_commands:
                     return False
             except SQLAlchemyError as e:
                 logging.error(f"An SQL error has occured in changing the user phone number: {str(e)}")
+                session.rollback()
+
+    #*gets set delay time from database
+    def get_delay(self):
+        with Session(engine) as session:
+            try:
+                delay = select(Settings).where(Settings.delay_time.in_('user_settings'))
+                return delay
+            except SQLAlchemyError as e:
+                logging.error(f"An SQL error has occured when trying to get delay time{str(e)}")
+        
+        
+    #* changes the delay time    
+    def change_delay(self, new_delay_time):
+         with Session(engine) as session:
+            try:
+                stmt = update(Settings).where(Settings.delay_time.in_('user_settings'))
+                stmt = stmt.values(delay_time=new_delay_time)
+                session.execute(stmt) #? pretty sure that execute is done automatically so subject to removal with comfirmation
+                session.commit()
+
+            except SQLAlchemyError as e:
+                logging.error(f"An SQL error has occured when attempting to change delay time: {str(e)}")
                 session.rollback()
