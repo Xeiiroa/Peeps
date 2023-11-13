@@ -1,11 +1,10 @@
 import re
 import logging
 
-from sqlalchemy import select, Text, update
+from sqlalchemy import select, Text, update, MetaData, Table, create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from dotenv import load_dotenv
-
 from . import engine
 from .models import Settings
 
@@ -19,15 +18,15 @@ class data_commands:
         functions_list = [name for name in dir(self) if callable(getattr(self, name))]
         functions = ""
         for function in functions_list:
-            function_list += f"{function}\n"
+            functions += f"{function}\n"
         return functions
         
     #*query the database to get the current set video save path
     def get_video_save_path(self):
         with Session(engine) as session:
             try:
-                save_path = select(Settings).where(Settings.video_save_path.in_('user_settings'))
-                return save_path
+                settings_row = session.scalar(select(Settings))
+                return settings_row.video_save_path
             except SQLAlchemyError as e:
                 logging.error(f"An SQL error has occured when trying to get video save path: {str(e)}")
                 
@@ -35,10 +34,20 @@ class data_commands:
     def get_phone_number(self):
         with Session(engine) as session:
             try:
-                phone_number = select(Settings).where(Settings.phone_number.in_('user_settings'))
-                return phone_number
+                settings_row = session.scalar(select(Settings))
+                return settings_row.phone_number
             except SQLAlchemyError as e:
                 logging.error(f"An SQL error has occured when trying to get phone number {str(e)}")
+                
+                
+    #*gets set delay time from database
+    def get_delay(self):
+        with Session(engine) as session:
+            try:
+                settings_row = session.scalar(select(Settings))
+                return settings_row.delay_time
+            except SQLAlchemyError as e:
+                logging.error(f"An SQL error has occured when trying to get delay time{str(e)}")
                 
     #*update the video save path in the database       
     #todo when this function is called open a window to choose file savepath
@@ -75,14 +84,7 @@ class data_commands:
                 logging.error(f"An SQL error has occured in changing the user phone number: {str(e)}")
                 session.rollback()
 
-    #*gets set delay time from database
-    def get_delay(self):
-        with Session(engine) as session:
-            try:
-                delay = select(Settings).where(Settings.delay_time.in_('user_settings'))
-                return delay
-            except SQLAlchemyError as e:
-                logging.error(f"An SQL error has occured when trying to get delay time{str(e)}")
+    
         
         
     #* changes the delay time    
@@ -97,3 +99,5 @@ class data_commands:
             except SQLAlchemyError as e:
                 logging.error(f"An SQL error has occured when attempting to change delay time: {str(e)}")
                 session.rollback()
+                
+  
