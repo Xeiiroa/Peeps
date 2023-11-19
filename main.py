@@ -1,43 +1,34 @@
 import argparse
 import sys
-from utils import Feed as feed
-from database.data import data_commands as settings
+import inspect
+from utils import Feed as FEED
+from database.data import data_commands as Settings
 from database import create_database
 
 
 def main():
     create_database()
-    
-    
+
     parser = argparse.ArgumentParser(description="Run Video Feed")
-    parser.add_argument("--settings")
-    
+    parser.add_argument("--settings", help="allows changes to settings", type=str) #value = None when called
     args = parser.parse_args()
     
     if args.settings:
-        if len(args) !=2:
-            settings()
-            settings.help()
+        settings = Settings()
         
-        else:
-            settings()
-            function_name = sys.argv[1]
-            
-            if hasattr(settings, function_name):
-                selected_function = getattr(settings, function_name)
-                
-                if sys.argv[2] is not None:
-                    selected_function(sys.argv[2])
-                
-                else:
-                    selected_function()
-            
+        
+        try:
+            if hasattr(settings, args.settings):
+                getattr(settings, args.settings)()    
             else:
-                print(f"function{function_name} not found")
-                sys.exit()
-                    
+                raise ValueError("Command does not exist")
+        except Exception as e:
+            print(f"Error: {e}")
+        
+        sys.exit()
+              
     else:
-        feed()
+        feed = FEED()
         feed.get_livefeed()
     
     
