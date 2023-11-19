@@ -2,11 +2,14 @@ import logging
 from time import sleep
 
 import cv2
-import mediapipe as mp
+import mediapipe as mp #type: ignore
 import datetime, time
 import sys
 from .notifications import send_alert
 from database.data import data_commands as Data
+from .notifications import send_alert
+
+
 
 class Feed():
     """
@@ -24,15 +27,18 @@ class Feed():
                 
         """
         
-        #! may need self
         self.data = Data()
-        self.mp_face_detection = mp.solutions.face_detection(model_selection=1, min_detection_confidence=0.5)
+        
+        self.face_cascade = cv2.CascadeClassifier(
+        cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+        self.body_cascade = cv2.CascadeClassifier(
+        cv2.data.haarcascades + "haarcascade_fullbody.xml")
+        
+        self.mp_face_detection = mp.solutions.face_detection    
         self.mp_drawing = mp.solutions.drawing_utils
         self.cam = self.find_cam()
-        self.face_detection = self.mp_face_detection.FaceDetection(model_selection=1, min_detection_confidence=0.5)
+        print(self.cam) #? test
         self.detection = False
-        self.get_livefeed()
-        self.record_delay= self.data.get_delay()
     
     # if a cam isnt found return false so that livefeed cant take place      
     def find_cam(self):
@@ -46,7 +52,9 @@ class Feed():
                 if cap.isOpened():
                     ret, frame = cap.read()
                     if frame is not None:
-                        return int(i) 
+                        cap.release()
+                        return int(i)
+                    cap.release() 
             return False
         except cv2.error as e:
             logging.error(f"An error has occured when trying to get webcam: {str(e)}")
@@ -57,38 +65,36 @@ class Feed():
         """
         Starts the recording processs and if a face is detected calls the start recording function
         """
-        self.detection=False
+        #! may not be needed self.detection=False
         
         #set delay before webcam can start to record
-        time.sleep(self.data.get_delay()) 
+        #time.sleep(self.data.get_delay()) #! add this back when testing is done
         
         self.cap = cv2.VideoCapture(self.cam)
-        if self.cam == False:
-            print("No webcam Found")
+        if not (0 <= self.cam <= 10):
+            print("Webcam not found")
             sys.exit()
         
-        with self.mp_face_detection:
-            while self.cap.isOpened():
-                success, image = self.cap.read()
-                if not success:
-                    print("empty frame")
-                    continue
         
-                #saying not to draw boxes
-                image.flags.writeable=False #?
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                
-                #making detections
-                results = self.face_detection.process(image)
-                
-                #if a face is detected start recording
-                #! has a risk of causing an infinite loop in the case that the conditional can repeat itself
-                if results.detections:
-                    time.sleep(2)
-                    if results.detections:
-                        self.start_recording(results, image)
+        
+        while self.cap.isOpened():
+            _, self.image = self.cap.read()
+            
+            gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
+            self.faces = self.face_cascade.detectMultiScale(gray, 1.3, 5)
+            self.bodies = self.face_cascade.detectMultiScale(gray, 1.3, 5)
+            
+            if not _:
+                print("empty frame")
+                continue
+    
+            if len(self.faces) + len(self.bodies) > 0:
+                time.sleep(2)
+                if len(self.faces) + len(self.bodies) > 0:
+                    self.start_recording()
+            
                         
-    def start_recording(self, results, image):
+    def start_recording(self):
         """
         Starts recording whenever a face is detected and when stopped saves the video into the given savepath
             
@@ -98,7 +104,12 @@ class Feed():
                     maxtime_without_detection (int): the maximum amount of time in seconds that a face can be undetedcted before the function ends
                     
         """
-        video_savepath = ...
+        
+        
+        
+        send_alert()
+        print("alert sent")
+        video_savepath = self.data.get_video_save_path() 
         timer_started = False
         no_detection_time = None
         maxtime_without_detection = 5
@@ -106,31 +117,66 @@ class Feed():
         fourcc = cv2.VideoWriter_fourcc(*"mp4v") 
         frame_size = (int(self.cap.get(3)), int(self.cap.get(4)))
         frame_rate = 20
+        out = None
         
-        #?self.cap isnt imported into the function so there may be a need to change it if it doesnt upload
-        while self.cap.isOpened():
-            if results.detections:
+        while True:
+            if len(self.faces) + len(self.bodies) > 0:
                 if self.detection:
-                    timer_started = False 
+                    timer_started = False
                 else:
                     self.detection = True
                     timestamp = datetime.datetime.now().strftime("%d-%m-%Y-%H-%M")
-                    self.out = cv2.VideoWriter(f'{video_savepath}/{timestamp}.mp4', fourcc, frame_rate, frame_size) #! needs testing: make sure it saves in the proper filepath
+                    out = cv2.VideoWriter(f'{video_savepath}/{timestamp}.mp4', fourcc, frame_rate, frame_size)
+                    print("recording...")
             elif self.detection:
                 if timer_started:
                     if time.time() - no_detection_time >= maxtime_without_detection:
-                        detection = False
-                        timer_started = False
-                        break
+                        self.detection = False
+                        timer_started= False
+                        print("stopping recording...")
+                        out.release()
+                        return
                 else:
-                    timer_started= True
-                    no_detection_time = time.time()
+                    timer_started = True
+                    no_detection_time = time.time()        
             if self.detection:
-                self.out.write(image)    
+               out.write(self.image)
+            
+            
                 
-        self.out.release()
-        return
-    
+             
+            
+            
+
+        
+        
+        """while True:
+            if self.results.detections:
+                if self.detection:
+                    timer_started = False
+                else:
+                    self.detection = True
+                    timestamp = datetime.datetime.now().strftime("%d-%m-%Y-%H-%M")
+                    out = cv2.VideoWriter(f'{video_savepath}/{timestamp}.mp4', fourcc, frame_rate, frame_size) #! needs testing: make sure it saves in the proper filepath
+                    #out.write(self.image)
+                    print("recording...")
+            elif self.detection:
+                if timer_started:
+                    if time.time() - no_detection_time >= maxtime_without_detection:
+                        self.detection = False
+                        timer_started = False
+                        out.release()
+                        print("recording stopped")
+                        break
+                else: timer_started = True
+                no_detection_time = time.time()
+            
+        out.write(self.image)
+        return"""
+                
+        
+        
+        
     def stop_feed(self):
         if self.cap is not None:
             self.cap.release()
