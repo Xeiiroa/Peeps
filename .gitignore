@@ -2,3 +2,4 @@
 .venv
 text-files
 __pycache__
+*.db

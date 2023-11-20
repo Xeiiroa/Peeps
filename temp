@@ -1,0 +1,113 @@
+#?self.cap isnt imported into the function so there may be a need to change it if it doesnt upload
+        while self.cap.isOpened():
+            if results.detections:
+                if self.detection:
+                    timer_started = False 
+                else:
+                    self.detection = True
+                    
+                    
+            elif self.detection:
+                if timer_started:
+                    if time.time() - no_detection_time >= maxtime_without_detection:
+                        detection = False
+                        timer_started = False
+                        break
+                else:
+                    timer_started= True
+                    no_detection_time = time.time()
+            if self.detection:
+                self.out.write(image)    
+                
+        self.out.release()
+        return
+    
+    
+
+
+"""while True:
+            if self.results.detections:
+                if self.detection:
+                    timer_started = False
+                else:
+                    self.detection = True
+                    timestamp = datetime.datetime.now().strftime("%d-%m-%Y-%H-%M")
+                    out = cv2.VideoWriter(f'{video_savepath}/{timestamp}.mp4', fourcc, frame_rate, frame_size) #! needs testing: make sure it saves in the proper filepath
+                    #out.write(self.image)
+                    print("recording...")
+            elif self.detection:
+                if timer_started:
+                    if time.time() - no_detection_time >= maxtime_without_detection:
+                        self.detection = False
+                        timer_started = False
+                        out.release()
+                        print("recording stopped")
+                        break
+                else: timer_started = True
+                no_detection_time = time.time()
+            
+        out.write(self.image)
+        return"""
+                
+
+
+    
+    
+    with self.mp_face_detection.FaceDetection(
+            model_selection=1, min_detection_confidence=0.5) as face_detection:
+            while self.cap.isOpened():
+                success, self.image = self.cap.read()
+                if not success:
+                    print("empty frame")
+                    continue
+        
+                #saying not to draw boxes
+                self.image.flags.writeable=False #?
+                self.image = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
+                
+                #making detections
+                self.results = face_detection.process(self.image)
+                
+                #if a face is detected start recording
+                #! has a risk of causing an infinite loop in the case that the conditional can repeat itself
+                if self.results.detections:
+                    time.sleep(2)
+                    if self.results.detections:
+                        self.start_recording()
+                        
+                        
+   
+   
+   
+                        
+if hasattr(settings, function_name):
+            selected_function = getattr(settings, function_name)
+            
+            if sys.argv[2] is not None:
+                try:
+                    selected_function(sys.argv[2])
+                except parser.error:
+                    pass
+        
+        
+        
+        if len(args) < 2:
+            settings = settings()
+            settings.help()
+        
+        else:
+            settings()
+            function_name = sys.argv[1]
+            
+            if hasattr(settings, function_name):
+                selected_function = getattr(settings, function_name)
+                
+                if sys.argv[2] is not None:
+                    selected_function(sys.argv[2])
+                
+                else:
+                    selected_function()
+            
+            else:
+                print(f"function{function_name} not found")
+                sys.exit()
