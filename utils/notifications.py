@@ -7,11 +7,11 @@ import twilio #type: ignore
 from database.data import data_commands as DATA
 
 
-load_dotenv('.env')
+load_dotenv('.env') 
 Data = DATA()
 
-account_sid = os.getenv('SMS_ACCOUNT_SID')
-auth_token = os.getenv('SMS_AUTH_TOKEN')
+account_sid = os.getenv('SMS_ACCOUNT_SID') # <-- #! Change to your twilio account sid
+auth_token = os.getenv('SMS_AUTH_TOKEN') # <-- #! Change to your twilio account sid
 client = Client(account_sid, auth_token)
 
 def send_alert():

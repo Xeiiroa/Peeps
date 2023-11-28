@@ -9,7 +9,7 @@ from .models import Settings, Base
 
 load_dotenv('.env')
 
-DB_NAME = os.getenv('DATABASE_NAME')
+DB_NAME = 'settings.db' 
 engine = create_engine(f'sqlite:///{DB_NAME}', echo=True)
 
 def create_database():
